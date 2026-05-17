@@ -61,7 +61,7 @@ The graph topology is visualised in `graph.png`.
 - **SSE streaming** — `/stream` endpoint pushes node-progress events to the browser in real time
 - **Confidence badge** — similarity score shown in UI when routing via knowledge base
 - **LangSmith tracing** — optional, enabled via `LANGCHAIN_TRACING_V2=true`
-- **Docker** — `docker-compose up` starts both API and Streamlit services
+- **Docker** — `docker-compose up` starts the API service
 
 ---
 
@@ -90,12 +90,11 @@ Compiled with `checkpointer=MemorySaver()`. Follow-ups ("What's the nightlife li
 
 ```
 travel-assistant/
-├── Atlas.html                  # Main UI — React 18 via CDN, no build step
+├── Atlas.html                  # UI — React 18 via CDN, no build step
 ├── app.jsx                     # React components
 ├── atlas.css                   # Theme tokens (light/dark)
-├── api.py                      # FastAPI — POST /query, POST /stream
-├── app.py                      # Streamlit UI (alternative)
 ├── tweaks-panel.jsx            # Live UI customisation panel
+├── api.py                      # FastAPI — POST /query, POST /stream
 ├── graph.png                   # LangGraph topology
 ├── Dockerfile
 ├── docker-compose.yml
@@ -158,7 +157,7 @@ LangSmith tracing is optional — set `LANGCHAIN_TRACING_V2=true` and add `LANGC
 python data/seed_vectorstore.py
 ```
 
-Embeds all 9 seed city documents into ChromaDB. Idempotent — safe to re-run (clears and re-seeds if collection exists).
+Embeds all 9 seed city documents into ChromaDB. Idempotent — safe to re-run.
 
 ### 4. Run
 
@@ -169,14 +168,9 @@ uvicorn api:app --reload
 
 **Open the UI:** double-click `Atlas.html` or open it in any browser. Requires the API running on port 8000.
 
-That's it — no build step, no npm, no bundler. The frontend is a single HTML file using React via CDN.
+No build step, no npm, no bundler.
 
-**Alternative — Streamlit:**
-```bash
-streamlit run app.py
-```
-
-**Alternative — Docker (both services):**
+**Docker:**
 ```bash
 docker-compose up --build
 ```

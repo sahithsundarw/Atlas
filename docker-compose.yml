@@ -8,17 +8,5 @@ services:
     volumes:
       - chroma_data:/app/chroma_db
 
-  streamlit:
-    build: .
-    command: streamlit run app.py --server.port 8501 --server.address 0.0.0.0
-    ports:
-      - "8501:8501"
-    env_file:
-      - .env
-    depends_on:
-      - api
-    environment:
-      - API_URL=http://api:8000
-
 volumes:
   chroma_data:
