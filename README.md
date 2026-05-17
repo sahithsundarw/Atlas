@@ -90,11 +90,11 @@ Compiled with `checkpointer=MemorySaver()`. Follow-ups ("What's the nightlife li
 
 ```
 travel-assistant/
-├── app.py                      # Streamlit UI
-├── api.py                      # FastAPI — POST /query, POST /stream
-├── Atlas.html                  # Standalone browser UI (React 18 via CDN)
-├── app.jsx                     # React frontend
+├── Atlas.html                  # Main UI — React 18 via CDN, no build step
+├── app.jsx                     # React components
 ├── atlas.css                   # Theme tokens (light/dark)
+├── api.py                      # FastAPI — POST /query, POST /stream
+├── app.py                      # Streamlit UI (alternative)
 ├── tweaks-panel.jsx            # Live UI customisation panel
 ├── graph.png                   # LangGraph topology
 ├── Dockerfile
@@ -162,19 +162,21 @@ Embeds all 9 seed city documents into ChromaDB. Idempotent — safe to re-run (c
 
 ### 4. Run
 
-**FastAPI backend:**
+**Start the API:**
 ```bash
 uvicorn api:app --reload
 ```
 
-**Streamlit UI:**
+**Open the UI:** double-click `Atlas.html` or open it in any browser. Requires the API running on port 8000.
+
+That's it — no build step, no npm, no bundler. The frontend is a single HTML file using React via CDN.
+
+**Alternative — Streamlit:**
 ```bash
 streamlit run app.py
 ```
 
-**Browser UI:** open `Atlas.html` (requires FastAPI on port 8000).
-
-**Docker:**
+**Alternative — Docker (both services):**
 ```bash
 docker-compose up --build
 ```
