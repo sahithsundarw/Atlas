@@ -75,7 +75,18 @@ async def query(body: QueryRequest) -> dict:
 
     if not result.get("city"):
         errors = result.get("errors", ["Unknown error"])
-        return {"error": " | ".join(errors)}
+        return {
+            "city": "",
+            "city_summary": " | ".join(errors),
+            "weather_forecast": [],
+            "image_urls": [],
+            "image_credits": [],
+            "source": "web",
+            "similarity_score": 0.0,
+            "fetched_at": "",
+            "flag": "",
+            "errors": errors,
+        }
 
     return {
         "city": result.get("city", ""),

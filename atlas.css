@@ -598,7 +598,7 @@ input { font: inherit; color: inherit; }
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 2px 7px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: rgba(255,255,255,0.18);
   border: 1px solid rgba(255,255,255,0.3);
   color: #fff;
