@@ -235,8 +235,6 @@ function Sidebar({ active, onSelect, onNew, theme, onTheme, chatHistory }) {
       </nav>
 
       <div className="side-foot">
-        <div className="avatar">SA</div>
-        <div className="who-name">Sahith</div>
         <button className="icon-btn" aria-label="Toggle theme" onClick={onTheme} title={theme === "light" ? "Switch to dark" : "Switch to light"}>
           {theme === "light" ? (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 8.2A4.5 4.5 0 0 1 5.8 3a4.5 4.5 0 1 0 5.2 5.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
