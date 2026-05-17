@@ -1,4 +1,3 @@
-"""Atlas — AI-powered Travel Intelligence. Streamlit entry point."""
 import html
 import logging
 import uuid
@@ -14,7 +13,6 @@ from agent.graph import get_graph, run_agent  # noqa: E402
 
 st.set_page_config(page_title="Atlas — Travel Intelligence", page_icon="🧭", layout="wide")
 
-# ── CSS ────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 #MainMenu,footer,header,.stDeployButton,[data-testid="stToolbar"]{display:none!important}
@@ -29,7 +27,6 @@ div[data-testid="stHorizontalBlock"]{gap:0!important}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Session state ──────────────────────────────────────────────────────────────
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 if "history" not in st.session_state:
@@ -45,7 +42,6 @@ def _get_graph():
 
 _get_graph()
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
 _FLAGS = {
     "tokyo": "🇯🇵", "kyoto": "🇯🇵", "osaka": "🇯🇵",
     "paris": "🇫🇷", "nice": "🇫🇷", "lyon": "🇫🇷",
@@ -142,8 +138,6 @@ def _render_chart(forecast: list, key: str) -> None:
     st.plotly_chart(fig, use_container_width=True, key=key)
 
 def _render_turn(question: str, response: dict, idx: int) -> None:
-    """Render one turn: user bubble + assistant response."""
-    # User bubble
     st.markdown(
         f'<div style="display:flex;justify-content:flex-end;margin:12px 0 6px 0">'
         f'<div style="background:#1f6feb;color:#fff;padding:9px 15px;'
@@ -164,7 +158,13 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     credits  = response.get("image_credits", [])
     summary  = response.get("city_summary", "")
     flag     = get_flag(city)
+    sim      = response.get("similarity_score", 0.0)
     badge    = "Live search" if source == "web" else "Knowledge base"
+    conf_html = (
+        f'<span style="font-size:10px;padding:2px 7px;border-radius:4px;'
+        f'background:#0d2438;color:#58a6ff;margin-left:4px">{round(sim*100)}% match</span>'
+        if source not in ("web", "seasonal") and sim > 0 else ""
+    )
 
     # Open assistant row
     st.markdown(
@@ -175,13 +175,13 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
         unsafe_allow_html=True,
     )
 
-    # City row + source badge
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
         f'<span style="font-size:16px">{flag}</span>'
         f'<span style="font-size:16px;font-weight:500;color:#e6edf3">{city}</span>'
-        f'<span style="font-size:10px;padding:2px 8px;border-radius:10px;'
+        f'<span style="font-size:10px;padding:2px 8px;border-radius:4px;'
         f'background:#0d2438;color:#58a6ff">{badge}</span>'
+        f'{conf_html}'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -198,8 +198,13 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
             unsafe_allow_html=True,
         )
 
-    # Forecast
-    if forecast:
+    if source == "seasonal":
+        st.markdown(
+            '<div style="font-size:9px;color:#484f58;font-style:italic;margin-bottom:10px">'
+            '☀ Seasonal climate info — live 5-day forecast not available for this period.</div>',
+            unsafe_allow_html=True,
+        )
+    elif forecast:
         st.markdown(
             '<div style="font-size:9px;font-weight:500;letter-spacing:.06em;'
             'color:#484f58;text-transform:uppercase;margin-bottom:6px">6-Day Forecast</div>',
@@ -208,8 +213,6 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
         st.markdown(_day_cards_html(forecast), unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         _render_chart(forecast, key=f"chart_{idx}")
-    else:
-        st.warning("Weather unavailable.")
 
     # Photos
     if images:
@@ -238,12 +241,8 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
-# ── Two-panel layout ───────────────────────────────────────────────────────────
 sidebar_col, main_col = st.columns([1, 4], gap="small")
 
-# ══════════════════════════════════════════════════════════════════════════════
-# LEFT SIDEBAR
-# ══════════════════════════════════════════════════════════════════════════════
 with sidebar_col:
     st.markdown(
         '<div style="background:#0d1117;border-right:1px solid #21262d;'
@@ -285,12 +284,8 @@ with sidebar_col:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# RIGHT MAIN
-# ══════════════════════════════════════════════════════════════════════════════
 with main_col:
 
-    # ── EMPTY STATE — HERO ────────────────────────────────────────────────────
     CHIPS = [
         ("🏙️", "Tell me about Tokyo"),
         ("🌸", "Outdoor Kyoto in May"),
@@ -339,7 +334,6 @@ with main_col:
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── CONVERSATION THREAD ───────────────────────────────────────────────────
     else:
         st.markdown(
             '<div style="max-width:720px;margin:0 auto;padding:20px 20px 80px 20px">',
@@ -354,7 +348,6 @@ with main_col:
                 )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── INPUT BAR ─────────────────────────────────────────────────────────────
     user_input = st.chat_input("Ask about a city or follow up…")
 
     if not user_input and st.session_state.pending_input:
