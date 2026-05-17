@@ -15,15 +15,40 @@ st.set_page_config(page_title="Atlas — Travel Intelligence", page_icon="🧭",
 
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+
 #MainMenu,footer,header,.stDeployButton,[data-testid="stToolbar"]{display:none!important}
 section[data-testid="stSidebar"]{display:none!important}
-[data-testid="stAppViewContainer"]{background:#0d1117}
-html,body{background:#0d1117;color:#e6edf3}
+html,body,[data-testid="stAppViewContainer"]{background:#F6F2EA!important}
 .block-container{padding:0!important;max-width:100%!important}
-.stChatInput>div{background:#21262d!important;border-radius:24px!important;border:0.5px solid #30363d!important}
+*{font-family:"Geist",ui-sans-serif,system-ui,sans-serif!important}
+button{font-family:"Geist",ui-sans-serif,system-ui,sans-serif!important}
+
+[data-testid="stChatInput"]>div{
+  background:#FBF8F1!important;
+  border-radius:4px!important;
+  border:1px solid rgba(26,22,18,0.12)!important;
+  color:#1A1612!important;
+}
+[data-testid="stChatInput"] textarea{color:#1A1612!important}
 div[data-testid="stHorizontalBlock"]{gap:0!important}
-[data-testid="column"]:first-child{background:#0d1117;border-right:1px solid #21262d;padding:16px 10px!important;min-height:100vh}
-[data-testid="column"]:last-child{padding:0!important}
+[data-testid="column"]:first-child{
+  background:#EFE9DD;
+  border-right:1px solid rgba(26,22,18,0.09);
+  padding:20px 14px!important;
+  min-height:100vh;
+}
+[data-testid="column"]:last-child{padding:0!important;background:#F6F2EA}
+
+.stButton>button{
+  background:#FBF8F1;
+  border:1px solid rgba(26,22,18,0.12);
+  border-radius:4px;
+  color:#1A1612;
+  font-size:13px;
+  transition:border-color 0.15s;
+}
+.stButton>button:hover{border-color:rgba(26,22,18,0.3);background:#F6F2EA}
 </style>
 """, unsafe_allow_html=True)
 
@@ -54,6 +79,7 @@ _FLAGS = {
     "amsterdam": "🇳🇱", "berlin": "🇩🇪", "munich": "🇩🇪",
     "toronto": "🇨🇦", "vancouver": "🇨🇦",
     "istanbul": "🇹🇷", "prague": "🇨🇿", "vienna": "🇦🇹",
+    "bali": "🇮🇩",
 }
 
 def get_flag(city: str) -> str:
@@ -83,19 +109,18 @@ def _day_cards_html(forecast: list) -> str:
     cards = ""
     for day in forecast[:6]:
         wet = day.get("precipitation_mm", 0) > 10
-        bg = "#0d1f2d" if wet else "#161b22"
-        border = "#1f6feb" if wet else "#21262d"
+        bg = "#EAE0D0" if wet else "#FBF8F1"
+        border = "#C8632F" if wet else "rgba(26,22,18,0.10)"
         mm = day.get("precipitation_mm", 0)
-        rain_str = f"{mm}mm"
-        rain_w = "font-weight:500;" if wet else ""
+        rain_color = "#C8632F" if wet else "rgba(26,22,18,0.38)"
         cards += (
-            f'<div style="background:{bg};border-radius:7px;padding:7px 4px;text-align:center;'
-            f'border:0.5px solid {border};min-width:0;">'
-            f'<div style="font-size:9px;color:#484f58;margin-bottom:3px">{day.get("date","")[-5:]}</div>'
+            f'<div style="background:{bg};border-radius:4px;padding:8px 4px;text-align:center;'
+            f'border:1px solid {border};min-width:0;">'
+            f'<div style="font-size:9px;color:rgba(26,22,18,0.38);margin-bottom:3px">{day.get("date","")[-5:]}</div>'
             f'<div style="font-size:14px;margin:2px 0">{_icon(day.get("condition",""))}</div>'
-            f'<div style="font-size:10px;font-weight:500;color:#e6edf3">'
+            f'<div style="font-size:10px;font-weight:500;color:#1A1612">'
             f'{day.get("temp_min_c","?")}–{day.get("temp_max_c","?")}°</div>'
-            f'<div style="font-size:9px;color:#58a6ff;margin-top:1px;{rain_w}">{rain_str}</div>'
+            f'<div style="font-size:9px;color:{rain_color};margin-top:1px">{mm}mm</div>'
             f'</div>'
         )
     return (
@@ -108,29 +133,28 @@ def _render_chart(forecast: list, key: str) -> None:
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=dates, y=[d["temp_max_c"] for d in forecast], name="High °C",
-        line=dict(color="#3fb950", width=1.8),
+        line=dict(color="#C8632F", width=2),
         hovertemplate="%{x}<br>High: %{y}°C<extra></extra>",
     ))
     fig.add_trace(go.Scatter(
         x=dates, y=[d["temp_min_c"] for d in forecast], name="Low °C",
-        line=dict(color="#58a6ff", width=1.8),
+        line=dict(color="#C8632F", width=1.5, dash="dot"),
         hovertemplate="%{x}<br>Low: %{y}°C<extra></extra>",
-        fill="tonexty", fillcolor="rgba(88,166,255,0.06)",
+        fill="tonexty", fillcolor="rgba(200,99,47,0.08)",
     ))
     fig.update_layout(
-        paper_bgcolor="#0d1117", plot_bgcolor="#161b22",
-        font_color="#8b949e",
-        margin=dict(l=0, r=0, t=6, b=0), height=220,
-        legend=dict(orientation="h", y=-0.35, font=dict(color="#8b949e", size=11)),
+        paper_bgcolor="#FBF8F1", plot_bgcolor="#FBF8F1",
+        font_color="rgba(26,22,18,0.5)",
+        margin=dict(l=0, r=0, t=6, b=0), height=200,
+        legend=dict(orientation="h", y=-0.35, font=dict(color="rgba(26,22,18,0.5)", size=11)),
         xaxis=dict(
-            gridcolor="rgba(255,255,255,0)",
-            showgrid=False,
-            tickfont=dict(color="#484f58", size=10),
-            linecolor="#21262d",
+            gridcolor="rgba(26,22,18,0.06)",
+            tickfont=dict(color="rgba(26,22,18,0.38)", size=10),
+            linecolor="rgba(26,22,18,0.09)",
         ),
         yaxis=dict(
-            gridcolor="#21262d",
-            tickfont=dict(color="#484f58", size=10),
+            gridcolor="rgba(26,22,18,0.06)",
+            tickfont=dict(color="rgba(26,22,18,0.38)", size=10),
             title=None,
             zeroline=False,
         ),
@@ -140,8 +164,8 @@ def _render_chart(forecast: list, key: str) -> None:
 def _render_turn(question: str, response: dict, idx: int) -> None:
     st.markdown(
         f'<div style="display:flex;justify-content:flex-end;margin:12px 0 6px 0">'
-        f'<div style="background:#1f6feb;color:#fff;padding:9px 15px;'
-        f'border-radius:16px 16px 3px 16px;font-size:13px;max-width:68%;line-height:1.55">'
+        f'<div style="background:#C8632F;color:#fff;padding:9px 15px;'
+        f'border-radius:4px;font-size:13px;max-width:68%;line-height:1.55">'
         f'{html.escape(question)}</div></div>',
         unsafe_allow_html=True,
     )
@@ -162,14 +186,14 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     badge    = "Live search" if source == "web" else "Knowledge base"
     conf_html = (
         f'<span style="font-size:10px;padding:2px 7px;border-radius:4px;'
-        f'background:#0d2438;color:#58a6ff;margin-left:4px">{round(sim*100)}% match</span>'
+        f'background:rgba(200,99,47,0.12);color:#C8632F">{round(sim*100)}% match</span>'
         if source not in ("web", "seasonal") and sim > 0 else ""
     )
 
-    # Open assistant row
     st.markdown(
         '<div style="display:flex;gap:10px;margin:4px 0 18px 0;align-items:flex-start">'
-        '<div style="width:26px;height:26px;min-width:26px;border-radius:50%;background:#4a9eff;'
+        '<div style="width:26px;height:26px;min-width:26px;border-radius:50%;'
+        'background:rgba(200,99,47,0.12);border:1px solid rgba(200,99,47,0.25);'
         'display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:2px">🧭</div>'
         '<div style="flex:1;min-width:0">',
         unsafe_allow_html=True,
@@ -178,9 +202,9 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
         f'<span style="font-size:16px">{flag}</span>'
-        f'<span style="font-size:16px;font-weight:500;color:#e6edf3">{city}</span>'
+        f'<span style="font-size:16px;font-weight:500;color:#1A1612">{city}</span>'
         f'<span style="font-size:10px;padding:2px 8px;border-radius:4px;'
-        f'background:#0d2438;color:#58a6ff">{badge}</span>'
+        f'background:rgba(26,22,18,0.07);color:rgba(26,22,18,0.55)">{badge}</span>'
         f'{conf_html}'
         f'</div>',
         unsafe_allow_html=True,
@@ -189,36 +213,34 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     for e in response.get("errors", []):
         st.warning(e)
 
-    # Summary
     if summary:
         st.markdown(
-            f'<div style="font-size:13px;color:#8b949e;line-height:1.65;'
-            f'border-left:2px solid #1f6feb;padding-left:10px;margin-bottom:14px">'
+            f'<div style="font-size:13px;color:rgba(26,22,18,0.65);line-height:1.65;'
+            f'border-left:2px solid #C8632F;padding-left:10px;margin-bottom:14px">'
             f'{html.escape(summary)}</div>',
             unsafe_allow_html=True,
         )
 
     if source == "seasonal":
         st.markdown(
-            '<div style="font-size:9px;color:#484f58;font-style:italic;margin-bottom:10px">'
+            '<div style="font-size:12px;color:rgba(26,22,18,0.45);font-style:italic;margin-bottom:10px">'
             '☀ Seasonal climate info — live 5-day forecast not available for this period.</div>',
             unsafe_allow_html=True,
         )
     elif forecast:
         st.markdown(
             '<div style="font-size:9px;font-weight:500;letter-spacing:.06em;'
-            'color:#484f58;text-transform:uppercase;margin-bottom:6px">6-Day Forecast</div>',
+            'color:rgba(26,22,18,0.38);text-transform:uppercase;margin-bottom:6px">6-Day Forecast</div>',
             unsafe_allow_html=True,
         )
         st.markdown(_day_cards_html(forecast), unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         _render_chart(forecast, key=f"chart_{idx}")
 
-    # Photos
     if images:
         st.markdown(
             '<div style="font-size:9px;font-weight:500;letter-spacing:.06em;'
-            'color:#484f58;text-transform:uppercase;margin:14px 0 6px 0">Photos</div>',
+            'color:rgba(26,22,18,0.38);text-transform:uppercase;margin:14px 0 6px 0">Photos</div>',
             unsafe_allow_html=True,
         )
         pcols = st.columns(3)
@@ -228,16 +250,13 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
                 st.image(url, use_container_width=True)
                 if c.get("name"):
                     st.markdown(
-                        f'<div style="font-size:9px;color:#484f58;margin-top:2px;'
+                        f'<div style="font-size:9px;color:rgba(26,22,18,0.38);margin-top:2px;'
                         f'overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
                         f'<a href="{c.get("link","#")}" target="_blank" '
-                        f'style="color:#484f58;text-decoration:none">📷 {c["name"]}</a></div>',
+                        f'style="color:rgba(26,22,18,0.38);text-decoration:none">📷 {c["name"]}</a></div>',
                         unsafe_allow_html=True,
                     )
-    else:
-        st.warning("Photos unavailable.")
 
-    # Close assistant-row divs
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 
@@ -245,16 +264,17 @@ sidebar_col, main_col = st.columns([1, 4], gap="small")
 
 with sidebar_col:
     st.markdown(
-        '<div style="background:#0d1117;border-right:1px solid #21262d;'
-        'min-height:100vh;padding:16px 12px;display:flex;flex-direction:column;gap:4px">'
-        '<div style="display:flex;align-items:center;gap:8px;padding:6px 4px 14px 4px">'
-        '<div style="width:8px;height:8px;border-radius:50%;background:#4a9eff"></div>'
-        '<span style="font-size:15px;font-weight:500;color:#e6edf3">Atlas</span>'
-        '</div>',
+        '<div style="padding:4px 6px 16px 6px">'
+        '<div style="display:flex;align-items:center;gap:8px;padding:2px 0 16px 0">'
+        '<div style="width:7px;height:7px;border-radius:50%;background:#C8632F;'
+        'box-shadow:0 0 0 3px rgba(200,99,47,0.18)"></div>'
+        '<span style="font-family:\'Instrument Serif\',Georgia,serif;font-size:22px;'
+        'color:#1A1612;line-height:1">Atlas</span>'
+        '</div></div>',
         unsafe_allow_html=True,
     )
 
-    if st.button("✏️  New chat", use_container_width=True):
+    if st.button("＋  New conversation", use_container_width=True):
         if st.session_state.conversation:
             st.session_state.history.append({
                 "id": str(uuid.uuid4()),
@@ -267,25 +287,18 @@ with sidebar_col:
 
     if st.session_state.history:
         st.markdown(
-            '<div style="font-size:10px;font-weight:500;letter-spacing:.06em;color:#484f58;'
-            'text-transform:uppercase;padding:10px 4px 4px 4px">Recent</div>',
+            '<div style="font-size:11px;font-weight:500;letter-spacing:.04em;'
+            'color:rgba(26,22,18,0.38);text-transform:uppercase;padding:10px 4px 4px 4px">Recent</div>',
             unsafe_allow_html=True,
         )
         for thread in reversed(st.session_state.history[-8:]):
-            if st.button(
-                f"💬  {thread['title']}",
-                key=f"hist_{thread['id']}",
-                use_container_width=True,
-            ):
+            if st.button(thread["title"], key=f"hist_{thread['id']}", use_container_width=True):
                 st.session_state.conversation = thread["turns"]
                 st.session_state.thread_id = str(uuid.uuid4())
                 st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 with main_col:
-
     CHIPS = [
         ("🏙️", "Tell me about Tokyo"),
         ("🌸", "Outdoor Kyoto in May"),
@@ -294,42 +307,23 @@ with main_col:
     ]
 
     if not st.session_state.conversation:
-        # Hero: top content (tag + headline + subtitle)
         st.markdown(
-            '<div style="background:#0a1628;padding:56px 48px 36px 48px">'
-            '<div style="max-width:520px">'
-            '<div style="display:inline-flex;align-items:center;gap:6px;'
-            'background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.15);'
-            'border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,0.6);'
-            'margin-bottom:20px">✦ AI-powered travel intelligence</div>'
-            '<div style="font-size:42px;font-weight:600;color:#fff;line-height:1.2;margin-bottom:14px">'
-            'Your personal<br><span style="color:#4a9eff">travel expert,</span><br>always on.</div>'
-            '<p style="font-size:15px;color:rgba(255,255,255,0.45);line-height:1.6;margin:0">'
-            'Ask about any city. Get weather, highlights,<br>and photos — instantly.</p>'
-            '</div></div>',
+            '<div style="padding:56px 48px 36px 48px;max-width:580px">'
+            '<div style="font-size:13px;color:rgba(26,22,18,0.45);margin-bottom:16px">Good to see you</div>'
+            '<div style="font-family:\'Instrument Serif\',Georgia,serif;font-size:42px;'
+            'color:#1A1612;line-height:1.2;margin-bottom:14px">'
+            'Where to <em>next?</em></div>'
+            '<p style="font-size:15px;color:rgba(26,22,18,0.45);line-height:1.6;margin:0">'
+            'Ask about any city — weather, food, things to do, or just vibe.</p>'
+            '</div>',
             unsafe_allow_html=True,
         )
 
-        # Hero: decorative input bar (visual only)
-        st.markdown(
-            '<div style="background:#0a1628;padding:0 48px 16px 48px">'
-            '<div style="background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.18);'
-            'border-radius:32px;padding:14px 20px;display:flex;align-items:center;gap:12px">'
-            '<span style="font-size:20px;color:rgba(255,255,255,0.2)">+</span>'
-            '<span style="flex:1;font-size:14px;color:rgba(255,255,255,0.3)">'
-            'Try "Is Kyoto good in May?" or "Best food in Tokyo"</span>'
-            '<div style="width:34px;height:34px;border-radius:50%;background:#4a9eff;'
-            'display:flex;align-items:center;justify-content:center;font-size:16px;color:white">↑</div>'
-            '</div></div>',
-            unsafe_allow_html=True,
-        )
-
-        # Hero: chip buttons (functional Streamlit buttons styled over navy bg)
-        st.markdown('<div style="background:#0a1628;padding:0 44px 48px 44px">', unsafe_allow_html=True)
+        st.markdown('<div style="padding:0 48px 24px 48px">', unsafe_allow_html=True)
         chip_cols = st.columns(4)
         for col, (emoji, prompt) in zip(chip_cols, CHIPS):
             with col:
-                if st.button(f"{emoji} {prompt}", use_container_width=True, key=f"chip_{prompt}"):
+                if st.button(f"{emoji}  {prompt}", use_container_width=True, key=f"chip_{prompt}"):
                     st.session_state.pending_input = prompt
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -343,12 +337,12 @@ with main_col:
             _render_turn(turn["question"], turn["response"], idx=i)
             if i < len(st.session_state.conversation) - 1:
                 st.markdown(
-                    '<hr style="border:none;border-top:1px solid #1f1f1f;margin:4px 0 20px 0">',
+                    '<hr style="border:none;border-top:1px solid rgba(26,22,18,0.07);margin:4px 0 20px 0">',
                     unsafe_allow_html=True,
                 )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    user_input = st.chat_input("Ask about a city or follow up…")
+    user_input = st.chat_input("Ask Atlas about anywhere…")
 
     if not user_input and st.session_state.pending_input:
         user_input = st.session_state.pending_input
