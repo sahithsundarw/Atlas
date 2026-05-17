@@ -1,6 +1,6 @@
 # Multi-Modal Travel Assistant — Atlas
 
-A LangGraph-powered travel assistant that combines vector retrieval, live weather forecasts, city photography, and web search into a single conversational interface. Built for the AI Engineer Assignment.
+A LangGraph-powered travel assistant that combines vector retrieval, live weather forecasts, city photography, and web search into a single conversational interface.
 
 ---
 
@@ -11,35 +11,57 @@ User Message
      │
      ▼
 ┌─────────────┐
-│  extract    │  OpenAI tool-call loop → city + intent (full / weather_only / images_only)
+│    guard    │  gpt-4o-mini classifies query — blocks non-travel questions
 └──────┬──────┘
        │
        ▼
 ┌─────────────┐
-│   router    │  ChromaDB similarity check → "vector" if seed city exists, else "web"
+│  extract    │  OpenAI tool-call loop → city + intent
 └──────┬──────┘
        │
-   ┌───┴────────────────────┐
-   ▼                        ▼
-┌────────┐           ┌────────────┐
-│retrieve│           │   fetch    │   (parallel fan-out via LangGraph Send)
-│(vector)│           │(weather +  │
-└────┬───┘           │ images +   │
-     │               │ web search)│
-     │               └─────┬──────┘
-     └──────────┬───────────┘
-                ▼
-        ┌─────────────┐
-        │   compose   │  OpenAI generates city_summary from retrieved context
-        └──────┬──────┘
-               │
-               ▼
-          Final Response
-    {city, city_summary, weather_forecast,
-     image_urls, image_credits, source, flag}
+       ▼
+┌─────────────┐
+│   router    │  ChromaDB cosine similarity → "vector" or "web"
+└──────┬──────┘
+       │
+   ┌───┴───────────┐
+   ▼               ▼
+┌────────┐    ┌─────────┐
+│vector  │    │web      │   one branch runs, then both join fan_out
+│fetch   │    │search   │
+└────┬───┘    └────┬────┘
+     └──────┬──────┘
+            ▼ fan_out (parallel)
+     ┌──────┴──────┐
+     ▼             ▼
+┌─────────┐  ┌─────────┐
+│ weather │  │ images  │
+└────┬────┘  └────┬────┘
+     └──────┬──────┘
+            ▼ join
+     ┌─────────────┐
+     │   compose   │  gpt-4o generates city_summary
+     └──────┬──────┘
+            ▼
+       Final Response
 ```
 
 The graph topology is visualised in `graph.png`.
+
+---
+
+## Key Features
+
+- **Guardrails** — `guard` node rejects non-travel queries before they reach the LLM chain
+- **Hybrid routing** — ChromaDB cosine similarity auto-selects knowledge base vs live web search
+- **9 seed cities** — Paris, Tokyo, New York, London, Barcelona, Dubai, Bali, Sydney, Rome
+- **Seasonal intelligence** — detects future/historical periods and responds with climate context instead of a missing forecast
+- **Parallel fan-out** — weather + images fetched concurrently via LangGraph `Send`
+- **Multi-turn memory** — `MemorySaver` checkpointer enables follow-up questions per `thread_id`
+- **SSE streaming** — `/stream` endpoint pushes node-progress events to the browser in real time
+- **Confidence badge** — similarity score shown in UI when routing via knowledge base
+- **LangSmith tracing** — optional, enabled via `LANGCHAIN_TRACING_V2=true`
+- **Docker** — `docker-compose up` starts both API and Streamlit services
 
 ---
 
@@ -47,22 +69,20 @@ The graph topology is visualised in `graph.png`.
 
 ### 1 — Manual OpenAI Tool-Call Loop (`agent/tools/registry.py`)
 
-The extract node does **not** use LangChain's built-in tool executor. Instead `run_with_tools()` implements the full loop manually:
+`run_with_tools()` implements the full loop without LangChain's built-in executor:
 
 1. Filter `TOOL_SCHEMAS` to the allowed subset
 2. Call `openai.chat.completions.create(... tools=schemas, tool_choice="auto")`
-3. If the response contains `tool_calls`, dispatch each to the matching Python function in `TOOLS`, wrap the result as a `tool` role message, and loop
+3. If the response has `tool_calls`, dispatch each to the matching Python function, wrap result as a `tool` message, and loop
 4. Return when the model produces a message with no `tool_calls`
-
-This gives full control over which tools are available per node, retry logic, and observability.
 
 ### 2 — Parallel Fan-Out with LangGraph `Send` (`agent/graph.py`)
 
-The fetch node fans out weather, images, and (when needed) web search as **concurrent LangGraph tasks** using `Send`. All three API calls run in parallel before the compose node aggregates the results. This cuts total latency to the slowest single call rather than the sum of all three.
+Weather and images are fetched as **concurrent LangGraph tasks**. Total latency = slowest single call, not sum of all calls.
 
-### 3 — MemorySaver Multi-Turn Memory (`agent/graph.py`)
+### 3 — MemorySaver Multi-Turn Memory
 
-The graph is compiled with `checkpointer=MemorySaver()`. Every request includes a `thread_id`; LangGraph replays the full state for that thread on each call. This enables true follow-up questions ("What's the nightlife like?", "Is it safe for solo travel?") without the client re-sending history — the graph resumes from its last checkpoint automatically.
+Compiled with `checkpointer=MemorySaver()`. Follow-ups ("What's the nightlife like?") work without re-sending history — the graph resumes from its last checkpoint for the `thread_id`.
 
 ---
 
@@ -70,34 +90,38 @@ The graph is compiled with `checkpointer=MemorySaver()`. Every request includes 
 
 ```
 travel-assistant/
-├── app.py                      # Streamlit UI (two-column layout, Plotly weather chart)
-├── api.py                      # FastAPI server — POST /query
+├── app.py                      # Streamlit UI
+├── api.py                      # FastAPI — POST /query, POST /stream
 ├── Atlas.html                  # Standalone browser UI (React 18 via CDN)
-├── app.jsx                     # React frontend components
+├── app.jsx                     # React frontend
 ├── atlas.css                   # Theme tokens (light/dark)
 ├── tweaks-panel.jsx            # Live UI customisation panel
-├── graph.png                   # LangGraph topology visualisation
+├── graph.png                   # LangGraph topology
+├── Dockerfile
+├── docker-compose.yml
 ├── agent/
-│   ├── graph.py                # StateGraph definition, MemorySaver, Send fan-out
+│   ├── graph.py                # StateGraph, MemorySaver, stream_agent
 │   ├── state.py                # AgentState TypedDict
-│   ├── schemas.py              # Pydantic models (WeatherDay, FinalResponse)
+│   ├── schemas.py              # Pydantic models
 │   └── nodes/
+│       ├── guard.py            # Travel-query guardrails
 │       ├── extract.py          # Tool-call loop → city + intent
-│       ├── router.py           # ChromaDB similarity → vector / web branch
-│       ├── retrieve.py         # ChromaDB query for seed cities
-│       ├── fetch.py            # Parallel weather + images + web search
-│       └── compose.py          # OpenAI city_summary generation
+│       ├── router.py           # ChromaDB similarity routing
+│       ├── retrieve.py         # Vector fetch for seed cities
+│       ├── fetch.py            # Weather + images + web search
+│       └── compose.py          # GPT-4o city_summary generation
 │   └── tools/
 │       ├── registry.py         # run_with_tools(), TOOLS, TOOL_SCHEMAS
 │       ├── weather.py          # OpenWeatherMap forecast
 │       ├── images.py           # Unsplash photo search
-│       └── search.py           # Tavily web search + extract_query_params
+│       └── search.py           # Tavily web search
 ├── data/
-│   ├── seed_cities/            # paris.md, tokyo.md, new_york.md (~400 words each)
+│   ├── seed_cities/            # 9 city markdown files (~400 words each)
 │   └── seed_vectorstore.py     # One-time ChromaDB ingestion (idempotent)
 ├── tests/
-│   ├── test_tools.py           # Smoke tests for each API tool
-│   └── test_tool_loop.py       # Manual tool-loop isolation test
+│   ├── test_tools.py           # API smoke tests
+│   ├── test_tool_loop.py       # Tool-loop isolation test
+│   └── eval.py                 # 25-case eval harness
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
@@ -119,8 +143,6 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Fill in all four keys:
-
 | Variable | Where to get it |
 |---|---|
 | `OPENAI_API_KEY` | platform.openai.com |
@@ -128,64 +150,68 @@ Fill in all four keys:
 | `OPENWEATHERMAP_API_KEY` | openweathermap.org/api |
 | `UNSPLASH_ACCESS_KEY` | unsplash.com/developers |
 
+LangSmith tracing is optional — set `LANGCHAIN_TRACING_V2=true` and add `LANGCHAIN_API_KEY`.
+
 ### 3. Seed the vector store
 
 ```bash
 python data/seed_vectorstore.py
 ```
 
-Embeds the three seed city documents into ChromaDB at `./chroma_db`. Idempotent — safe to re-run.
+Embeds all 9 seed city documents into ChromaDB. Idempotent — safe to re-run (clears and re-seeds if collection exists).
 
 ### 4. Run
 
-**Streamlit (assignment submission):**
-```bash
-streamlit run app.py
-```
-
-**FastAPI backend (for browser UI):**
+**FastAPI backend:**
 ```bash
 uvicorn api:app --reload
 ```
 
-**Browser UI:** open `Atlas.html` directly (requires FastAPI running on port 8000).
+**Streamlit UI:**
+```bash
+streamlit run app.py
+```
+
+**Browser UI:** open `Atlas.html` (requires FastAPI on port 8000).
+
+**Docker:**
+```bash
+docker-compose up --build
+```
 
 ---
 
 ## Routing Logic
 
-| Condition | Branch | Data source |
+| Condition | Branch | Source label |
 |---|---|---|
-| City matches a seed document (ChromaDB similarity > threshold) | `vector` | Local ChromaDB chunk |
-| No seed match | `web` | Tavily web search |
-
-Both branches then fetch live weather (OpenWeatherMap 5-day/3-hour forecast) and photos (Unsplash) in parallel.
-
----
-
-## Structured Output
-
-All responses conform to `agent/schemas.py`:
-
-```python
-class FinalResponse(BaseModel):
-    city: str
-    city_summary: str
-    weather_forecast: list[WeatherDay]   # date, temp_min_c, temp_max_c, condition, precipitation_mm
-    image_urls: list[str]
-    source: Literal["vector", "web"]
-    fetched_at: str
-```
-
-The compose node extracts `city_summary` from an OpenAI JSON-mode response. Weather and image data come directly from tool calls, never hallucinated.
+| ChromaDB similarity ≥ 0.40 | `vector_fetch` | `"vector"` |
+| Similarity < 0.40 | `web_search` | `"web"` |
+| Future/historical period detected | either branch | `"seasonal"` |
 
 ---
 
 ## Running Tests
 
 ```bash
+# unit + integration
 python -m pytest tests/ -v
+
+# eval harness (requires .env keys)
+python -m pytest tests/eval.py -v -m eval
 ```
 
-`test_tools.py` — live API smoke tests (requires `.env` keys)  
-`test_tool_loop.py` — verifies the manual tool-call loop terminates correctly
+---
+
+## Structured Output
+
+```python
+class FinalResponse(BaseModel):
+    city: str
+    city_summary: str
+    weather_forecast: list[WeatherDay]
+    image_urls: list[str]
+    source: Literal["vector", "web", "seasonal"]
+    similarity_score: float
+    fetched_at: str
+```

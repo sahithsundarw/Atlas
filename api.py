@@ -1,10 +1,12 @@
 """Atlas FastAPI backend — wraps LangGraph agent as a REST API."""
+import json
 import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 load_dotenv(override=True)
@@ -15,7 +17,7 @@ _missing = [k for k in _REQUIRED if not os.environ.get(k)]
 if _missing:
     raise RuntimeError(f"Missing required env vars: {', '.join(_missing)}")
 
-from agent.graph import get_graph, run_agent  # noqa: E402
+from agent.graph import get_graph, run_agent, stream_agent  # noqa: E402
 
 
 _FLAGS: dict[str, str] = {
@@ -30,6 +32,7 @@ _FLAGS: dict[str, str] = {
     "amsterdam": "🇳🇱", "berlin": "🇩🇪", "munich": "🇩🇪",
     "toronto": "🇨🇦", "vancouver": "🇨🇦",
     "istanbul": "🇹🇷", "prague": "🇨🇿", "vienna": "🇦🇹",
+    "bali": "🇮🇩",
 }
 
 
@@ -81,7 +84,19 @@ async def query(body: QueryRequest) -> dict:
         "image_urls": result.get("image_urls", []),
         "image_credits": result.get("image_credits", []),
         "source": result.get("source", "web"),
+        "similarity_score": result.get("similarity_score", 0.0),
         "fetched_at": result.get("fetched_at", ""),
         "flag": get_flag(result.get("city", "")),
         "errors": result.get("errors", []),
     }
+
+
+@app.post("/stream")
+async def stream(body: QueryRequest):
+    """Server-Sent Events endpoint — streams node progress then final result."""
+    def generate():
+        for event in stream_agent(body.message, body.thread_id):
+            yield f"data: {json.dumps(event)}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")

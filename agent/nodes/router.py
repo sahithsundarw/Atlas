@@ -26,7 +26,11 @@ def _get_collection():
 
 
 def route(state: AgentState) -> str:
-    """ChromaDB distance <= 0.25 (similarity >= 0.75) routes to vector, else web."""
+    """ChromaDB cosine distance maps to similarity; threshold 0.40 separates seed cities from unknowns."""
+    return "vector_fetch" if state.get("similarity_score", 0) >= _SIMILARITY_THRESHOLD else "web_search"
+
+
+def router_node(state: AgentState) -> dict:
     city = state["city"]
     openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
@@ -37,7 +41,7 @@ def route(state: AgentState) -> str:
 
     if collection.count() == 0:
         logger.info("ChromaDB empty — routing to web_search for %s", city)
-        return "web_search"
+        return {"similarity_score": 0.0}
 
     results = collection.query(
         query_embeddings=[city_embedding],
@@ -45,14 +49,7 @@ def route(state: AgentState) -> str:
         include=["distances"],
     )
     distance = results["distances"][0][0]
-    similarity = 1 - distance
+    similarity = round(1 - distance, 4)
 
     logger.info("Router: city=%s similarity=%.3f threshold=%.2f", city, similarity, _SIMILARITY_THRESHOLD)
-
-    if similarity >= _SIMILARITY_THRESHOLD:
-        return "vector_fetch"
-    return "web_search"
-
-
-def router_node(state: AgentState) -> dict:
-    return {}
+    return {"similarity_score": similarity}

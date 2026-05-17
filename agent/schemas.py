@@ -16,4 +16,5 @@ class FinalResponse(BaseModel):
     weather_forecast: list[WeatherDay]
     image_urls: list[str]
     source: Literal["vector", "web", "seasonal"]
+    similarity_score: float = 0.0
     fetched_at: str

@@ -17,6 +17,12 @@ CITY_FILES = {
     "Paris": "paris.md",
     "Tokyo": "tokyo.md",
     "New York": "new_york.md",
+    "London": "london.md",
+    "Barcelona": "barcelona.md",
+    "Dubai": "dubai.md",
+    "Bali": "bali.md",
+    "Sydney": "sydney.md",
+    "Rome": "rome.md",
 }
 
 

@@ -210,6 +210,7 @@ def compose(state: AgentState) -> dict:
         weather_forecast=weather_forecast,
         image_urls=images or [],
         source=source,
+        similarity_score=state.get("similarity_score") or 0.0,
         fetched_at=datetime.now(timezone.utc).isoformat(),
     )
 

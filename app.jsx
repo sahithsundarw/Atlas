@@ -346,14 +346,19 @@ function Chat({ onAsk, showWeather, messages, loading, error }) {
                     {d.flag && <span className="place-cc">{d.flag}</span>}
                     <span className="place-name">{d.city || 'Atlas'}</span>
                   </div>
-                  {currentTemp !== null && (
-                    <div className="place-hero-now">
+                  <div className="place-hero-now">
+                    {currentTemp !== null && (
                       <span className="now-temp">{currentTemp}°</span>
-                      <span className="now-cond">
-                        {d.source === 'web' ? 'Live search' : 'Knowledge base'}
+                    )}
+                    <span className="now-cond">
+                      {d.source === 'web' ? 'Live search' : 'Knowledge base'}
+                    </span>
+                    {d.source !== 'web' && d.similarity_score > 0 && (
+                      <span className="confidence-badge" title="Vector similarity to knowledge base">
+                        {Math.round(d.similarity_score * 100)}% match
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
 

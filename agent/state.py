@@ -14,5 +14,6 @@ class AgentState(TypedDict):
     weather_raw: Optional[dict]   # raw return from weather tool before parsing
     images: Optional[list[str]]
     image_credits: Optional[list[dict]]
+    similarity_score: Optional[float]
     final_response: Optional[dict]
     errors: Annotated[list[str], add]
