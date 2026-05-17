@@ -85,6 +85,22 @@ _FLAGS = {
 def get_flag(city: str) -> str:
     return _FLAGS.get(city.lower().strip(), "🌐")
 
+def _follow_ups(city: str, intent: str) -> list[str]:
+    i = (intent or "").lower()
+    if "weather" in i or "forecast" in i:
+        return [f"Outdoor activities in {city}", f"Best time to visit {city}", f"{city} in winter"]
+    if "night" in i or "bar" in i or "club" in i:
+        return [f"Best bars in {city}", f"{city} food scene", f"Hotels in {city}"]
+    if "food" in i or "restaurant" in i:
+        return [f"Street food in {city}", f"Rooftop restaurants in {city}", f"{city} in spring"]
+    return [f"Best restaurants in {city}", f"{city} in winter", f"Things to do in {city} with family"]
+
+_FEATURED = [
+    {"place": "Kyoto",     "blurb": "Temple gardens, late spring",   "img": "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80"},
+    {"place": "Lisbon",    "blurb": "Tiled hills above the Tagus",   "img": "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=600&q=80"},
+    {"place": "Santorini", "blurb": "Whitewash and caldera light",   "img": "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600&q=80"},
+]
+
 _COND_ICONS = {
     "clear sky": "☀️", "few clouds": "🌤️", "scattered clouds": "⛅",
     "broken clouds": "☁️", "overcast": "☁️", "shower rain": "🌦️",
@@ -181,6 +197,7 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
     images   = response.get("image_urls", [])
     credits  = response.get("image_credits", [])
     summary  = response.get("city_summary", "")
+    intent   = response.get("intent", "general")
     flag     = get_flag(city)
     sim      = response.get("similarity_score", 0.0)
     badge    = "Live search" if source == "web" else "Knowledge base"
@@ -189,6 +206,19 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
         f'background:rgba(200,99,47,0.12);color:#C8632F">{round(sim*100)}% match</span>'
         if source not in ("web", "seasonal") and sim > 0 else ""
     )
+    hero_img  = images[0] if images else ""
+    rest_imgs = images[1:] if len(images) > 1 else []
+
+    if hero_img:
+        st.markdown(
+            f'<div style="position:relative;border-radius:4px;overflow:hidden;margin-bottom:12px">'
+            f'<img src="{hero_img}" style="width:100%;max-height:240px;object-fit:cover;display:block;border-radius:4px"/>'
+            f'<div style="position:absolute;bottom:0;left:0;right:0;padding:12px 14px;'
+            f'background:linear-gradient(transparent,rgba(26,22,18,0.65));">'
+            f'<span style="font-size:15px;color:#fff;font-weight:500">{flag} {city}</span>'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown(
         '<div style="display:flex;gap:10px;margin:4px 0 18px 0;align-items:flex-start">'
@@ -237,15 +267,16 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
         st.markdown("<br>", unsafe_allow_html=True)
         _render_chart(forecast, key=f"chart_{idx}")
 
-    if images:
+    if rest_imgs:
         st.markdown(
             '<div style="font-size:9px;font-weight:500;letter-spacing:.06em;'
             'color:rgba(26,22,18,0.38);text-transform:uppercase;margin:14px 0 6px 0">Photos</div>',
             unsafe_allow_html=True,
         )
         pcols = st.columns(3)
-        for i, url in enumerate(images[:6]):
-            c = credits[i] if i < len(credits) else {}
+        for i, url in enumerate(rest_imgs[:5]):
+            credit_idx = i + 1
+            c = credits[credit_idx] if credit_idx < len(credits) else {}
             with pcols[i % 3]:
                 st.image(url, use_container_width=True)
                 if c.get("name"):
@@ -258,6 +289,15 @@ def _render_turn(question: str, response: dict, idx: int) -> None:
                     )
 
     st.markdown("</div></div>", unsafe_allow_html=True)
+
+    if city and city != "Unknown":
+        suggestions = _follow_ups(city, intent)
+        fcols = st.columns(3)
+        for col, sug in zip(fcols, suggestions):
+            with col:
+                if st.button(sug, key=f"followup_{idx}_{sug}", use_container_width=True):
+                    st.session_state.pending_input = sug
+                    st.rerun()
 
 
 sidebar_col, main_col = st.columns([1, 4], gap="small")
@@ -327,6 +367,29 @@ with main_col:
                     st.session_state.pending_input = prompt
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            '<div style="padding:0 48px 8px 48px">'
+            '<div style="font-size:11px;font-weight:500;letter-spacing:.04em;'
+            'color:rgba(26,22,18,0.38);text-transform:uppercase;margin-bottom:12px">Featured this week</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        feat_cols = st.columns(3)
+        for col, f in zip(feat_cols, _FEATURED):
+            with col:
+                st.markdown(
+                    f'<div style="border-radius:4px;overflow:hidden;border:1px solid rgba(26,22,18,0.10)">'
+                    f'<img src="{f["img"]}" style="width:100%;height:140px;object-fit:cover;display:block"/>'
+                    f'<div style="padding:10px 12px;background:#FBF8F1">'
+                    f'<div style="font-size:13px;font-weight:500;color:#1A1612">{f["place"]}</div>'
+                    f'<div style="font-size:11px;color:rgba(26,22,18,0.45);margin-top:2px">{f["blurb"]}</div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button(f"Ask about {f['place']}", key=f"feat_{f['place']}", use_container_width=True):
+                    st.session_state.pending_input = f"Tell me about {f['place']}"
+                    st.rerun()
 
     else:
         st.markdown(
