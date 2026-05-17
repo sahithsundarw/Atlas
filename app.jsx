@@ -253,7 +253,7 @@ function Landing({ onAsk, greeting, showFeatured }) {
     <div className="landing" data-screen-label="01 Landing">
       <div className="landing-inner">
         <div className="welcome">
-          <div className="welcome-eyebrow">{greeting}, Sahith</div>
+          <div className="welcome-eyebrow">{greeting}</div>
           <h1 className="welcome-h1">Where to <em>next?</em></h1>
         </div>
 
