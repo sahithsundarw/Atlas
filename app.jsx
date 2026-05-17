@@ -32,7 +32,7 @@ const PROMPTS = [
   "3 days in Lisbon",
 ];
 
-// ─── API helpers ──────────────────────────────────────────────────────────────
+
 async function queryAtlas(message, threadId) {
   const res = await fetch('http://localhost:8000/query', {
     method: 'POST',
@@ -70,7 +70,7 @@ function generateFollowUps(city, intent) {
   ];
 }
 
-// ─── Glyphs ────────────────────────────────────────────────────────────────
+
 function WxGlyph({ kind, size = 20 }) {
   const s = size, c = "currentColor";
   return (
@@ -84,7 +84,7 @@ function WxGlyph({ kind, size = 20 }) {
   );
 }
 
-// ─── Forecast chart (SVG, no external deps) ───────────────────────────────────
+
 function ForecastChart({ forecast }) {
   const [hovIdx, setHovIdx] = useState(null);
   const svgRef = useRef(null);
@@ -191,7 +191,7 @@ function ForecastChart({ forecast }) {
   );
 }
 
-// ─── Photo grid ───────────────────────────────────────────────────────────────
+
 function PhotoGrid({ urls }) {
   if (!urls || urls.length === 0) return null;
   return (
@@ -205,7 +205,7 @@ function PhotoGrid({ urls }) {
   );
 }
 
-// ─── Sidebar ───────────────────────────────────────────────────────────────
+
 function Sidebar({ active, onSelect, onNew, theme, onTheme, chatHistory }) {
   const items = chatHistory.length > 0 ? chatHistory : RECENT_FALLBACK;
   return (
@@ -249,7 +249,7 @@ function Sidebar({ active, onSelect, onNew, theme, onTheme, chatHistory }) {
   );
 }
 
-// ─── Landing (composer-as-hero) ────────────────────────────────────────────
+
 function Landing({ onAsk, greeting, showFeatured }) {
   return (
     <div className="landing" data-screen-label="01 Landing">
@@ -296,7 +296,7 @@ function Landing({ onAsk, greeting, showFeatured }) {
   );
 }
 
-// ─── Chat ──────────────────────────────────────────────────────────────────
+
 function Chat({ onAsk, showWeather, messages, loading, error }) {
   const threadRef = useRef(null);
 
@@ -439,7 +439,7 @@ function Chat({ onAsk, showWeather, messages, loading, error }) {
   );
 }
 
-// ─── Composer ──────────────────────────────────────────────────────────────
+
 function Composer({ onSend, placeholder, big }) {
   const [v, setV] = useState("");
   const submit = () => { if (v.trim()) { onSend(v); setV(""); } };
@@ -459,7 +459,7 @@ function Composer({ onSend, placeholder, big }) {
   );
 }
 
-// ─── App ───────────────────────────────────────────────────────────────────
+
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [view, setView] = useState("home");

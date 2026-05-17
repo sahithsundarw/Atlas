@@ -41,7 +41,6 @@ _YEAR_ROUND_PHRASES = [
 
 
 def is_non_current_period_query(messages: list = None, intent: str = "") -> tuple[bool, str]:
-    """Return (True, period_label) if the query targets a time outside the 5-day forecast window."""
     full_text = (intent or "").lower()
     if messages:
         for m in messages[-4:]:
@@ -74,7 +73,6 @@ def is_non_current_period_query(messages: list = None, intent: str = "") -> tupl
 
 
 def get_climate_context(city: str, period: str, user_question: str = "") -> str:
-    """Return a GPT-4o generated seasonal climate answer for city/period."""
     from openai import OpenAI
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -105,26 +103,7 @@ def get_weather_forecast(
     user_question: str = "",
     state: dict = None,
 ) -> dict:
-    """Fetch aggregated daily weather forecast for a city.
-
-    Detects seasonal / future-month queries via is_non_current_period_query.
-    When detected, returns climate context from GPT-4o instead of live data.
-
-    Args:
-        city: City name to look up.
-        intent: Current intent string (used for period detection).
-        messages: Recent conversation messages (used for period detection).
-        user_question: Latest human message, forwarded to get_climate_context.
-        state: Optional full AgentState dict; fields extracted if provided.
-
-    Returns:
-        Dict with "forecast" list, or an unavailability dict for non-current periods.
-
-    Raises:
-        ValueError: If city is not found via geocoding.
-        requests.HTTPError: If any OWM API call fails.
-    """
-    # Allow callers to pass state dict as fallback source of intent/messages
+    # allow callers to pass state dict as fallback
     if state:
         intent        = intent or state.get("intent", "")
         messages      = messages or state.get("messages", [])

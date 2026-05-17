@@ -2,7 +2,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 
-/* ─── Theme tokens ───────────────────────────────────────────────────── */
+
 .theme-light {
   --accent: #C8632F;
   --bg:        #F6F2EA;
@@ -72,7 +72,7 @@ body {
 button { font: inherit; color: inherit; cursor: pointer; }
 input { font: inherit; color: inherit; }
 
-/* ─── Shell ──────────────────────────────────────────────────────────── */
+
 .app {
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -83,7 +83,7 @@ input { font: inherit; color: inherit; }
   transition: background 0.25s ease, color 0.25s ease;
 }
 
-/* ─── Sidebar ────────────────────────────────────────────────────────── */
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -187,7 +187,7 @@ input { font: inherit; color: inherit; }
 }
 .icon-btn:hover { color: var(--ink-1); background: var(--line-soft); }
 
-/* ─── Main ───────────────────────────────────────────────────────────── */
+
 .main {
   display: flex;
   flex-direction: column;
@@ -196,7 +196,7 @@ input { font: inherit; color: inherit; }
   position: relative;
 }
 
-/* ─── Landing ────────────────────────────────────────────────────────── */
+
 .landing {
   flex: 1;
   display: flex;
@@ -268,7 +268,7 @@ input { font: inherit; color: inherit; }
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
-/* ─── Featured row (landing) ────────────────────────────────────────── */
+
 .featured {
   margin-top: 12px;
   display: flex; flex-direction: column; gap: 14px;
@@ -337,7 +337,7 @@ input { font: inherit; color: inherit; }
   margin-top: 3px;
 }
 
-/* ─── Composer ───────────────────────────────────────────────────────── */
+
 .composer {
   display: flex;
   align-items: center;
@@ -378,7 +378,7 @@ input { font: inherit; color: inherit; }
 .comp-send:disabled { opacity: 0.25; cursor: default; }
 .comp-send:not(:disabled):hover { background: var(--accent); color: #fff; transform: scale(1.04); }
 
-/* ─── Chat ───────────────────────────────────────────────────────────── */
+
 .chat {
   flex: 1;
   display: flex;
@@ -413,7 +413,7 @@ input { font: inherit; color: inherit; }
   line-height: 1.45;
 }
 
-/* ─── Place hero (chat) ─────────────────────────────────────────────── */
+
 .place-hero {
   position: relative;
   height: 220px;
@@ -487,7 +487,7 @@ input { font: inherit; color: inherit; }
 }
 .ai-body p:last-child { margin-bottom: 0; }
 
-/* ─── Follow-up pills ───────────────────────────────────────────────── */
+
 .ai-actions {
   display: flex;
   flex-wrap: wrap;
@@ -509,7 +509,7 @@ input { font: inherit; color: inherit; }
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
-/* ─── Weather card ──────────────────────────────────────────────────── */
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -567,7 +567,7 @@ input { font: inherit; color: inherit; }
   font-weight: 500;
 }
 
-/* ─── Composer dock (chat) ───────────────────────────────────────────── */
+
 .composer-dock {
   padding: 12px 32px 24px;
   max-width: 744px;
@@ -575,7 +575,7 @@ input { font: inherit; color: inherit; }
   margin: 0 auto;
 }
 
-/* ─── Seasonal banner ────────────────────────────────────────────────── */
+
 .seasonal-banner {
   display: flex;
   align-items: flex-start;
@@ -592,7 +592,7 @@ input { font: inherit; color: inherit; }
   opacity: 0.7;
 }
 
-/* ─── Confidence badge ───────────────────────────────────────────────── */
+
 .confidence-badge {
   font-size: 10px;
   font-weight: 600;
@@ -605,7 +605,7 @@ input { font: inherit; color: inherit; }
   backdrop-filter: blur(4px);
 }
 
-/* ─── Forecast chart ─────────────────────────────────────────────────── */
+
 .forecast-chart {
   padding: 8px 0 4px;
   margin-bottom: 4px;
@@ -614,7 +614,7 @@ input { font: inherit; color: inherit; }
   overflow: visible;
 }
 
-/* ─── Photo grid ─────────────────────────────────────────────────────── */
+
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -633,7 +633,7 @@ input { font: inherit; color: inherit; }
 }
 .photo-item:hover img { transform: scale(1.04); }
 
-/* ─── Typing dots ────────────────────────────────────────────────────── */
+
 .typing-dots {
   display: flex; align-items: center; gap: 5px;
   padding: 12px 0;
@@ -650,7 +650,7 @@ input { font: inherit; color: inherit; }
   40% { transform: translateY(-6px); opacity: 1; }
 }
 
-/* ─── Error tip ──────────────────────────────────────────────────────── */
+
 .error-tip {
   margin-top: 16px;
   padding: 10px 14px;
@@ -662,7 +662,7 @@ input { font: inherit; color: inherit; }
 }
 .error-tip strong { color: var(--accent); margin-right: 6px; }
 
-/* ─── Responsive ─────────────────────────────────────────────────────── */
+
 @media (max-width: 760px) {
   .app { grid-template-columns: 0 1fr; }
   .sidebar { display: none; }

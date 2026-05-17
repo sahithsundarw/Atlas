@@ -15,11 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def _fix_mojibake(text: str) -> str:
-    """Reverse UTF-8-decoded-as-Latin-1 mojibake (e.g. 'Â°' → '°').
-
-    Whole-string encode('latin-1') fails on mixed content (smart quotes, em-dashes).
-    Fall back to scanning adjacent char pairs that form valid 2-byte UTF-8 sequences.
-    """
     if not text:
         return text
     try:
@@ -102,12 +97,12 @@ def _is_wrong_topic(summary: str, intent: str) -> bool:
 
 def compose(state: AgentState) -> dict:
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    city        = state["city"]
-    weather     = state.get("weather", {})
+    city = state["city"]
+    weather = state.get("weather", {})
     weather_raw = state.get("weather_raw", {})
-    images      = state.get("images", [])
-    source      = state.get("source", "web")
-    intent      = state.get("intent", "general")
+    images = state.get("images", [])
+    source = state.get("source", "web")
+    intent = state.get("intent", "general")
 
     last_user_message = ""
     for m in reversed(state.get("messages", [])):

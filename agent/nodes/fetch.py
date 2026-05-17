@@ -51,7 +51,7 @@ def images_node(state: AgentState) -> dict:
     search_query = state.get("image_search_query") or city
     try:
         result = get_city_images(city, search_query=search_query)
-        urls    = result.get("urls", [])
+        urls = result.get("urls", [])
         credits = result.get("credits", [])
         logger.info("images_node: got %d images for %s", len(urls), city)
         return {"images": urls, "image_credits": credits}

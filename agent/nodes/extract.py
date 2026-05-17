@@ -46,13 +46,13 @@ def extract_intent(state: AgentState) -> dict:
         response_format={"type": "json_object"},
     )
 
-    city   = state.get("city")
+    city = state.get("city")
     intent = state.get("intent", "full")
     image_search_query = state.get("image_search_query", "")
 
     try:
         parsed = json.loads(response.choices[0].message.content)
-        city   = parsed.get("city") or city
+        city = parsed.get("city") or city
         intent = parsed.get("intent") or intent
         image_search_query = parsed.get("image_search_query") or f"{city} {intent}"
     except (json.JSONDecodeError, KeyError) as exc:
