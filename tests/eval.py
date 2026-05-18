@@ -29,9 +29,7 @@ if not _server_up():
     pytest.skip("Atlas API server is not running at http://localhost:8000", allow_module_level=True)
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 def query(message: str, thread_id: str | None = None) -> dict:
     if thread_id is None:
@@ -45,9 +43,9 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 HTTPS_RE = re.compile(r"^https://")
 
 
-# ---------------------------------------------------------------------------
+
 # 1. Seed cities → source="vector"
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("city", [
@@ -69,9 +67,9 @@ def test_seed_city_routes_to_vector(city):
     )
 
 
-# ---------------------------------------------------------------------------
+
 # 2. Unknown cities → source="web"
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("city", ["Reykjavik", "Lima"])
@@ -83,9 +81,9 @@ def test_unknown_city_routes_to_web(city):
     )
 
 
-# ---------------------------------------------------------------------------
+
 # 3. Seasonal queries → source="seasonal", 0 forecast days
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("message", [
@@ -103,9 +101,9 @@ def test_seasonal_query(message):
     )
 
 
-# ---------------------------------------------------------------------------
+
 # 4. city_summary is non-empty and > 50 chars
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("message", [
@@ -124,9 +122,9 @@ def test_city_summary_non_empty(message):
     )
 
 
-# ---------------------------------------------------------------------------
+
 # 5. weather_forecast items have correct fields and types
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("city", ["Paris", "Tokyo", "London"])
@@ -154,9 +152,9 @@ def test_weather_forecast_structure(city):
         )
 
 
-# ---------------------------------------------------------------------------
+
 # 6. image_urls are valid https:// URLs
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 @pytest.mark.parametrize("city", ["Paris", "Tokyo", "Sydney"])
@@ -169,9 +167,9 @@ def test_image_urls_are_https(city):
         assert HTTPS_RE.match(url), f"{city}: image URL is not https — got {url!r}"
 
 
-# ---------------------------------------------------------------------------
+
 # 7. Multi-turn: city context persists across turns on same thread_id
-# ---------------------------------------------------------------------------
+
 
 @pytest.mark.eval
 def test_multiturn_city_context_persists():
