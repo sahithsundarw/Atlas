@@ -1,6 +1,6 @@
-# Multi-Modal Travel Assistant — Atlas
+# Atlas — Multi-Modal Travel Assistant
 
-A LangGraph-powered travel assistant that combines vector retrieval, live weather forecasts, city photography, and web search into a single conversational interface.
+A LangGraph-powered travel assistant combining vector retrieval, live weather forecasts, city photography, and web search into a single conversational interface. Built with FastAPI + React (no bundler).
 
 ---
 
@@ -11,7 +11,7 @@ User Message
      │
      ▼
 ┌─────────────┐
-│    guard    │  gpt-4o-mini classifies query — blocks non-travel questions
+│    guard    │  gpt-4o-mini — rejects non-travel queries
 └──────┬──────┘
        │
        ▼
@@ -27,7 +27,7 @@ User Message
    ┌───┴───────────┐
    ▼               ▼
 ┌────────┐    ┌─────────┐
-│vector  │    │web      │   one branch runs, then both join fan_out
+│vector  │    │web      │
 │fetch   │    │search   │
 └────┬───┘    └────┬────┘
      └──────┬──────┘
@@ -46,22 +46,22 @@ User Message
        Final Response
 ```
 
-The graph topology is visualised in `graph.png`.
+Graph topology: `graph.png`
 
 ---
 
 ## Key Features
 
-- **Guardrails** — `guard` node rejects non-travel queries before they reach the LLM chain
-- **Hybrid routing** — ChromaDB cosine similarity auto-selects knowledge base vs live web search
+- **Guardrails** — `guard` node rejects non-travel queries via gpt-4o-mini before any LLM chain runs
+- **Hybrid routing** — ChromaDB cosine similarity auto-selects knowledge base vs live web search (threshold 0.40)
 - **9 seed cities** — Paris, Tokyo, New York, London, Barcelona, Dubai, Bali, Sydney, Rome
-- **Seasonal intelligence** — detects future/historical periods and responds with climate context instead of a missing forecast
+- **Seasonal intelligence** — detects future/historical periods, returns climate context instead of a missing forecast
 - **Parallel fan-out** — weather + images fetched concurrently via LangGraph `Send`
 - **Multi-turn memory** — `MemorySaver` checkpointer enables follow-up questions per `thread_id`
-- **SSE streaming** — `/stream` endpoint pushes node-progress events to the browser in real time
-- **Confidence badge** — similarity score shown in UI when routing via knowledge base
-- **LangSmith tracing** — optional, enabled via `LANGCHAIN_TRACING_V2=true`
-- **Docker** — `docker-compose up` starts the API service
+- **SSE streaming** — `/stream` endpoint pushes node-progress events to the browser
+- **Confidence badge** — similarity score shown in UI for knowledge-base responses
+- **LangSmith tracing** — optional, `LANGCHAIN_TRACING_V2=true`
+- **Docker** — single `docker-compose up` starts the API
 
 ---
 
@@ -72,17 +72,17 @@ The graph topology is visualised in `graph.png`.
 `run_with_tools()` implements the full loop without LangChain's built-in executor:
 
 1. Filter `TOOL_SCHEMAS` to the allowed subset
-2. Call `openai.chat.completions.create(... tools=schemas, tool_choice="auto")`
-3. If the response has `tool_calls`, dispatch each to the matching Python function, wrap result as a `tool` message, and loop
-4. Return when the model produces a message with no `tool_calls`
+2. `openai.chat.completions.create(tools=schemas, tool_choice="auto")`
+3. For each `tool_call` in the response: dispatch to the matching Python function, wrap result as a `tool` message, loop
+4. Return when the model replies with no `tool_calls`
 
-### 2 — Parallel Fan-Out with LangGraph `Send` (`agent/graph.py`)
+### 2 — Parallel Fan-Out (`agent/graph.py`)
 
-Weather and images are fetched as **concurrent LangGraph tasks**. Total latency = slowest single call, not sum of all calls.
+Weather and images are fetched as concurrent LangGraph tasks via `Send`. Total latency = slowest single call, not the sum.
 
 ### 3 — MemorySaver Multi-Turn Memory
 
-Compiled with `checkpointer=MemorySaver()`. Follow-ups ("What's the nightlife like?") work without re-sending history — the graph resumes from its last checkpoint for the `thread_id`.
+Compiled with `checkpointer=MemorySaver()`. Follow-ups like "What's the nightlife like?" resolve the city from the prior checkpoint — client sends no history.
 
 ---
 
@@ -90,40 +90,42 @@ Compiled with `checkpointer=MemorySaver()`. Follow-ups ("What's the nightlife li
 
 ```
 travel-assistant/
-├── Atlas.html                  # UI — React 18 via CDN, no build step
-├── app.jsx                     # React components
-├── atlas.css                   # Theme tokens (light/dark)
-├── tweaks-panel.jsx            # Live UI customisation panel
-├── api.py                      # FastAPI — POST /query, POST /stream
-├── graph.png                   # LangGraph topology
+├── Atlas.html               # UI — React 18 via CDN, no build step
+├── app.jsx                  # React components
+├── atlas.css                # Theme tokens (light + dark)
+├── tweaks-panel.jsx         # Live theme/accent customisation
+├── api.py                   # FastAPI — POST /query, POST /stream
+├── graph.png                # LangGraph topology diagram
+├── run.ps1                  # Windows: start API + serve UI + open browser
+├── run.sh                   # macOS/Linux equivalent
 ├── Dockerfile
 ├── docker-compose.yml
-├── agent/
-│   ├── graph.py                # StateGraph, MemorySaver, stream_agent
-│   ├── state.py                # AgentState TypedDict
-│   ├── schemas.py              # Pydantic models
-│   └── nodes/
-│       ├── guard.py            # Travel-query guardrails
-│       ├── extract.py          # Tool-call loop → city + intent
-│       ├── router.py           # ChromaDB similarity routing
-│       ├── retrieve.py         # Vector fetch for seed cities
-│       ├── fetch.py            # Weather + images + web search
-│       └── compose.py          # GPT-4o city_summary generation
-│   └── tools/
-│       ├── registry.py         # run_with_tools(), TOOLS, TOOL_SCHEMAS
-│       ├── weather.py          # OpenWeatherMap forecast
-│       ├── images.py           # Unsplash photo search
-│       └── search.py           # Tavily web search
-├── data/
-│   ├── seed_cities/            # 9 city markdown files (~400 words each)
-│   └── seed_vectorstore.py     # One-time ChromaDB ingestion (idempotent)
-├── tests/
-│   ├── test_tools.py           # API smoke tests
-│   ├── test_tool_loop.py       # Tool-loop isolation test
-│   └── eval.py                 # 25-case eval harness
 ├── requirements.txt
 ├── .env.example
-└── .gitignore
+├── agent/
+│   ├── graph.py             # StateGraph, MemorySaver, stream_agent
+│   ├── state.py             # AgentState TypedDict
+│   ├── schemas.py           # Pydantic models (WeatherDay, FinalResponse)
+│   └── nodes/
+│       ├── guard.py         # Non-travel query rejection
+│       ├── extract.py       # city + intent extraction
+│       ├── router.py        # ChromaDB similarity routing
+│       ├── retrieve.py      # Vector fetch
+│       ├── fetch.py         # Weather + images (parallel)
+│       └── compose.py       # GPT-4o summary generation
+│   └── tools/
+│       ├── registry.py      # run_with_tools(), TOOLS, TOOL_SCHEMAS
+│       ├── weather.py       # OpenWeatherMap forecast + seasonal detection
+│       ├── images.py        # Unsplash photo search
+│       └── search.py        # Tavily web search
+├── data/
+│   ├── seed_cities/         # 9 markdown files (~400 words each)
+│   └── seed_vectorstore.py  # One-time ChromaDB ingestion (idempotent)
+└── tests/
+    ├── test_tools.py        # Tool-level smoke tests
+    ├── test_tool_loop.py    # Tool-call loop isolation
+    ├── smoke.py             # End-to-end API smoke tests
+    └── eval.py              # 25-case eval harness
 ```
 
 ---
@@ -140,16 +142,17 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
+# fill in all four keys
 ```
 
-| Variable | Where to get it |
+| Variable | Source |
 |---|---|
 | `OPENAI_API_KEY` | platform.openai.com |
 | `TAVILY_API_KEY` | app.tavily.com |
 | `OPENWEATHERMAP_API_KEY` | openweathermap.org/api |
 | `UNSPLASH_ACCESS_KEY` | unsplash.com/developers |
 
-LangSmith tracing is optional — set `LANGCHAIN_TRACING_V2=true` and add `LANGCHAIN_API_KEY`.
+LangSmith (optional): set `LANGCHAIN_TRACING_V2=true` + `LANGCHAIN_API_KEY`.
 
 ### 3. Seed the vector store
 
@@ -157,57 +160,81 @@ LangSmith tracing is optional — set `LANGCHAIN_TRACING_V2=true` and add `LANGC
 python data/seed_vectorstore.py
 ```
 
-Embeds all 9 seed city documents into ChromaDB. Idempotent — safe to re-run.
+Embeds all 9 city documents into ChromaDB. Idempotent.
 
 ### 4. Run
 
-**Start the API:**
-```bash
-uvicorn api:app --reload
+**Windows:**
+```powershell
+.\run.ps1
 ```
 
-**Open the UI:** double-click `Atlas.html` or open it in any browser. Requires the API running on port 8000.
+**macOS / Linux:**
+```bash
+bash run.sh
+```
 
-No build step, no npm, no bundler.
+Both scripts start the API on port 8000, serve the frontend on port 3000, and open `Atlas.html` in the browser automatically.
+
+**Manual:**
+```bash
+uvicorn api:app --reload        # terminal 1
+python -m http.server 3000      # terminal 2
+# open http://localhost:3000/Atlas.html
+```
 
 **Docker:**
 ```bash
 docker-compose up --build
+# then open Atlas.html manually
 ```
 
 ---
 
 ## Routing Logic
 
-| Condition | Branch | Source label |
+| Condition | Branch | `source` field |
 |---|---|---|
 | ChromaDB similarity ≥ 0.40 | `vector_fetch` | `"vector"` |
 | Similarity < 0.40 | `web_search` | `"web"` |
-| Future/historical period detected | either branch | `"seasonal"` |
+| Future / historical period | either branch | `"seasonal"` |
 
 ---
 
-## Running Tests
+## Tests
 
 ```bash
-# unit + integration
-python -m pytest tests/ -v
+# tool + loop tests
+python -m pytest tests/test_tools.py tests/test_tool_loop.py -v
 
-# eval harness (requires .env keys)
+# end-to-end smoke (requires API running)
+python tests/smoke.py
+
+# eval harness
 python -m pytest tests/eval.py -v -m eval
 ```
 
 ---
 
-## Structured Output
+## API
 
+**POST /query**
+```json
+{ "message": "Tell me about Tokyo", "thread_id": "abc123" }
+```
+
+**POST /stream** — SSE, same body. Emits `progress` events per node then a final `done` event.
+
+**Response schema:**
 ```python
 class FinalResponse(BaseModel):
     city: str
     city_summary: str
     weather_forecast: list[WeatherDay]
     image_urls: list[str]
+    image_credits: list[dict]
     source: Literal["vector", "web", "seasonal"]
     similarity_score: float
+    flag: str
     fetched_at: str
 ```
