@@ -89,7 +89,7 @@ Compiled with `checkpointer=MemorySaver()`. Follow-ups like "What's the nightlif
 ## Project Structure
 
 ```
-travel-assistant/
+Atlas/
 ├── Atlas.html               # UI — React 18 via CDN, no build step
 ├── app.jsx                  # React components
 ├── atlas.css                # Theme tokens (light + dark)
